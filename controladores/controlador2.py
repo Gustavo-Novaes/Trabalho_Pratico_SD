@@ -12,6 +12,15 @@ CAMINHO_BANCO = PASTA_PROJETO / "banco_dados" / "controlador2.db"
 
 @Pyro5.api.expose
 class Controlador2:
+    def __init__(self):
+        self.papel = "Reserva"
+
+    def obter_papel(self):
+        return self.papel
+
+    def assumir_principal(self):
+        self.papel = "Principal"
+        return "Controlador 2 agora é Principal."
 
     def obter_status(self):
         return "Controlador 2 funcionando!"
