@@ -121,6 +121,34 @@ class Controlador1:
                 "erro": str(erro)
             }
 
+    def registrar_obra_replica(self, id_obra, nome, localizacao, descricao, data_inicio, status):
+        conexao = sqlite3.connect(CAMINHO_BANCO)
+        conexao.execute("PRAGMA foreign_keys = ON")
+
+        cursor = conexao.cursor()
+
+        cursor.execute(
+            "SELECT id_obra FROM obras WHERE id_obra = ?",
+            (id_obra,)
+        )
+
+        obra_existente = cursor.fetchone()
+
+        if obra_existente:
+            conexao.close()
+            return "Obra já estava replicada!"
+
+        cursor.execute("""
+            INSERT INTO obras (
+                id_obra, nome, localizacao, descricao, data_inicio, status
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (id_obra, nome, localizacao, descricao, data_inicio, status))
+
+        conexao.commit()
+        conexao.close()
+
+        return "Obra replicada com sucesso!"
     
     def sincronizar_pendencias(self):
         conexao = sqlite3.connect(CAMINHO_BANCO)

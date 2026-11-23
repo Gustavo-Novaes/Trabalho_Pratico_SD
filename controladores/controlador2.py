@@ -1,4 +1,3 @@
-
 import sqlite3
 from pathlib import Path
 
@@ -37,7 +36,56 @@ class Controlador2:
         conexao.close()
 
         return obras
-    
+
+    def cadastrar_obra(self, nome, localizacao, descricao, data_inicio, status):
+        conexao = sqlite3.connect(CAMINHO_BANCO)
+        conexao.execute("PRAGMA foreign_keys = ON")
+
+        cursor = conexao.cursor()
+
+        cursor.execute("""
+            INSERT INTO obras (
+                nome, localizacao, descricao, data_inicio, status
+            )
+            VALUES (?, ?, ?, ?, ?)
+        """, (nome, localizacao, descricao, data_inicio, status))
+
+        id_obra = cursor.lastrowid
+
+        conexao.commit()
+        conexao.close()
+
+        # Tenta replicar a obra no Controlador 1
+        try:
+            controlador1 = Pyro5.api.Proxy(
+                "PYRO:controlador1@localhost:50001"
+            )
+
+            resultado = controlador1.registrar_obra_replica(
+                id_obra,
+                nome,
+                localizacao,
+                descricao,
+                data_inicio,
+                status
+            )
+
+            controlador1._pyroRelease()
+
+            return {
+                "sucesso": True,
+                "mensagem": "Obra cadastrada e replicada com sucesso!",
+                "id_obra": id_obra,
+                "replicacao": resultado
+            }
+
+        except Exception as erro:
+            return {
+                "sucesso": True,
+                "mensagem": "Obra cadastrada no Controlador 2. A replicação está pendente.",
+                "id_obra": id_obra,
+                "erro": str(erro)
+            }
     
     def registrar_obra_replica(self, id_obra, nome, localizacao, descricao, data_inicio, status):
         conexao = sqlite3.connect(CAMINHO_BANCO)
@@ -76,9 +124,9 @@ class Controlador2:
             "disponivel": True
         }
 
-
-
-
+    def assumir_reserva(self):
+        self.papel = "Reserva"
+        return "Controlador 2 agora é Reserva."
 
 if __name__ == "__main__":
     controlador = Controlador2()
